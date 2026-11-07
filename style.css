@@ -1,0 +1,516 @@
+
+html,
+body,
+button,
+input,
+textarea,
+select {
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+.index-content-sections {
+  --content-inset: 6vw;
+  width: 100%;
+  padding: clamp(56px, 7vw, 104px) var(--content-inset) clamp(80px, 10vw, 140px);
+  background: #000;
+  color: #fff;
+  text-align: center;
+}
+
+.thoughts,
+.text-container {
+  width: min(100%, 1440px);
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.thoughts {
+  margin-bottom: clamp(54px, 6vw, 78px);
+}
+
+.thoughts h2 {
+  max-width: 980px;
+  margin: 0 auto;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #fff;
+  font-size: clamp(40px, 4.8vw, 72px);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -2px;
+  opacity: 0;
+  transform: translateY(18px);
+  animation: introReveal .7s cubic-bezier(.2, .8, .2, 1) forwards;
+}
+
+.thoughts h2 span,
+.subline span {
+  color: #15a59a;
+}
+
+.thoughts::after {
+  content: "";
+  display: block;
+  width: 45px;
+  height: 2px;
+  margin: clamp(34px, 4vw, 48px) auto 0;
+  background: #15a59a;
+  opacity: 0;
+  transform: translateY(18px);
+  animation: introReveal .7s .12s cubic-bezier(.2, .8, .2, 1) forwards;
+}
+
+.text-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: clamp(72px, 8vw, 120px);
+}
+
+.subline {
+  max-width: 950px;
+  margin: 0 auto;
+  color: rgba(255, 255, 255, .78);
+  font-size: clamp(16px, 1.25vw, 20px);
+  font-weight: 400;
+  line-height: 1.55;
+  letter-spacing: -.2px;
+}
+
+.subline p {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: introReveal .7s cubic-bezier(.2, .8, .2, 1) forwards;
+}
+
+.subline p + p {
+  margin-top: 18px;
+}
+
+.subline p:nth-child(1) {
+  animation-delay: .24s;
+}
+
+.subline p:nth-child(2) {
+  animation-delay: .36s;
+}
+
+.subline p:nth-child(3) {
+  animation-delay: .48s;
+}
+
+@keyframes introReveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 700px) {
+  .index-content-sections {
+    --content-inset: 7vw;
+    padding-right: 7vw;
+    padding-left: 7vw;
+  }
+
+  .thoughts h2 {
+    font-size: clamp(36px, 9.5vw, 56px);
+    letter-spacing: -1.3px;
+  }
+
+  .subline {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thoughts h2,
+  .thoughts::after,
+  .subline p {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}
+
+/* Carousel starts */
+.carousel-main-ka-bhi-main {
+  margin: 0% 10%;
+}
+.carousel-main-main {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.carousel {
+  position: relative;
+  width: 100%;
+  height: 600px;
+}
+
+.list {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.list .item {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.list .item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 40px;
+}
+
+.list .item.active {
+  opacity: 1;
+}
+
+.thumbnail-controls {
+  position: absolute;
+  bottom: 20px;
+  right: -20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  z-index: 2;
+}
+
+.thumbnail {
+  display: flex;
+  gap: 10px;
+  order: 2;
+}
+
+.thumbnail-controls .arrows {
+  display: contents;
+}
+
+.thumbnail-controls .arrows button {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  background: rgba(8, 12, 16, 0.82);
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+  z-index: 3;
+}
+
+.thumbnail-controls .arrows button:first-child {
+  order: 1;
+}
+
+.thumbnail-controls .arrows button:last-child {
+  order: 3;
+}
+
+.thumbnail-controls .arrows button svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.thumbnail-controls .arrows button:hover {
+  border-color: #01d5f2;
+  background: #01d5f2;
+  color: #071014;
+  transform: scale(1.08);
+}
+
+.thumbnail-controls .arrows button:focus-visible {
+  outline: 2px solid #01d5f2;
+  outline-offset: 3px;
+}
+
+/* Keep the thumbnail strip between the two arrow buttons. */
+.thumbnail-controls .thumbnail {
+  position: static;
+  right: auto;
+  bottom: auto;
+  z-index: auto;
+}
+
+/* Thumbnail items */
+.thumbnail .item {
+  width: 150px;
+  height: 120px;
+  cursor: pointer;
+  transition: transform 0.3s ease-in-out;
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.thumbnail .item.is-hidden {
+  display: none;
+}
+
+.thumbnail .item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  border-radius: 10px;
+}
+
+.thumbnail .item.active {
+  border-color: #01d5f2;
+  border-radius: 10px;
+  transform: scale(1.1);
+}
+
+.work-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  color: white;
+  text-align: center;
+  padding: 5px;
+  font-size: 12px;
+}
+
+/* Carousel ends */
+
+
+
+
+
+.services-wrapper {
+  overflow-x: hidden; /* Hide scroll bar */
+  width: calc(100% + (2 * var(--content-inset))); /* Full-width container */
+  margin-left: calc(-1 * var(--content-inset));
+  position: relative;
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+.list-of-services {
+  display: flex;
+  width: max-content; /* Allow content to exceed the container */
+  transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smoother easing function */
+  scroll-behavior: smooth; /* Smooth auto-scroll */
+}
+
+.service {
+  height: 40rem;
+  width: 30rem;
+  flex-shrink: 0; /* Prevent shrinking */
+  border-right: 1px solid white;
+  background-color: #000000; /* Default background for services */
+  color: white; /* Default text color */
+  position: relative;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease; /* Smooth background and text transition */
+  cursor: pointer; /* Pointer cursor on hover */
+}
+
+.service:hover .service1-desc {
+  opacity: 1; /* Fully visible on hover */
+  visibility: visible; /* Allow interaction when visible */
+}
+
+.headings {
+  font-size: 45px;
+  display: flex;
+  justify-content: center;
+  padding-top: 75px;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 44px;
+  font-weight: 200;
+  font-synthesis: none;
+  letter-spacing: -.5px;
+}
+/* Fade-in description */
+.service .service1-desc {
+  opacity: 0; /* Initially hidden */
+  visibility: hidden; /* Prevent interaction when hidden */
+  font-size: 1.2rem;
+  padding: 1rem;
+  color: black; /* Ensure visibility on colored background */
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease; /* Smooth fade-in effect */
+  position: absolute; /* Absolute position to overlay it properly */
+  top: 13rem; /* Adjust placement as needed */
+  left: 1rem; /* Align with padding */
+  right: 1rem; /* Align with padding */
+  color: black; /* Text color */
+  padding: 1rem; /* Add padding */
+  text-align: center;
+  font-size: 30px;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 200;
+  font-synthesis: none;
+  letter-spacing: -.25px;
+}
+
+.services-wrapper .btnn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 168px;
+  height: 58px;
+  padding: 0 24px;
+  border: 2px solid #050505;
+  border-radius: 999px;
+  background: transparent;
+  color: #050505;
+  cursor: pointer;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 200;
+  font-synthesis: none;
+  letter-spacing: 0;
+  line-height: 1;
+  transition: background-color .25s ease, color .25s ease, transform .25s ease;
+}
+
+.services-wrapper .btnn i {
+  color: #050505 !important;
+  font-size: 17px;
+}
+
+.services-wrapper .btnn:hover {
+  background: #050505;
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.services-wrapper .btnn:hover i {
+  color: #fff !important;
+}
+
+/* Unique hover backgrounds */
+.service1:hover {
+  background-color: #14a49a; /* Yellow */
+  color: #000; /* Text color for contrast */
+}
+
+.service2:hover {
+  background-color: #ebe1d3; /* Green */
+  color: #000; /* Text color for contrast */
+}
+
+.service3:hover {
+  background-color: #14a49a; /* Blue */
+  color: #000; /* Text color for contrast */
+}
+
+.service4:hover {
+  background-color: #ebe1d3; /* Red */
+  color: #000; /* Text color for contrast */
+}
+
+/* Header code starts */
+
+
+/* Align the button with the nav items */
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.header-container nav ul {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  gap: 50px;
+  margin: 0; /* Remove unwanted margins */
+  padding: 0;
+}
+
+nav .btn {
+  margin: 0;
+  padding: 0.5em 1.5em;
+}
+
+nav a {
+  text-decoration: none;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+nav a:hover {
+  color: #00bfb3;
+}
+
+/* Trending Section */
+.trending {
+  text-align: center;
+  margin-bottom: 3px;
+}
+
+.trending p {
+  font-size: 0.9rem;
+  color: #ccc;
+}
+/* Contact us button */
+.btn-posnawr {
+  color: white;
+  position: relative;
+  display: block;
+  overflow: hidden;
+  width: 100%;
+  height: auto;
+  max-width: 250px;
+  border-radius: 50px;
+  padding: 10px 25px;
+  text-align: center;
+  text-decoration: none;
+  border: 2px solid #087268;
+}
+.btn-posnawr span {
+  position: absolute;
+  display: block;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background-color: #12a697;
+  -webkit-transition:
+    width 0.4s ease-in-out,
+    height 0.4s ease-in-out;
+  transition:
+    width 0.4s ease-in-out,
+    height 0.4s ease-in-out;
+  -webkit-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+  z-index: -1;
+}
+.btn-posnawr:hover {
+  color: #eee;
+}
+.btn-posnawr:hover span {
+  width: 225%;
+  height: 562.5px;
+}
+.btn-posnawr:active {
+  background-color: #12a697;
+}
+
+/* Header code ends */
