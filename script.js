@@ -292,3 +292,71 @@ serviceItems.forEach((item) => {
         parent.classList.toggle('active');
     });
 });
+
+(function initializeMobileServicesStack() {
+    const mediaQuery = window.matchMedia('(max-width: 700px)');
+    const stack = document.querySelector('.mobile-services-stack__cards');
+    const cards = Array.from(document.querySelectorAll('.mobile-services-stack__card'));
+    let activeIndex = 0;
+
+    if (!stack || cards.length !== 4) return;
+
+    function clearMobileStackStyles() {
+        cards.forEach((card, index) => {
+            card.style.removeProperty('--mobile-service-top');
+            card.style.removeProperty('--mobile-service-height');
+            card.style.removeProperty('z-index');
+            card.setAttribute('aria-expanded', index === 0 ? 'true' : 'false');
+        });
+    }
+
+    function updateMobileStack() {
+        if (!mediaQuery.matches) {
+            clearMobileStackStyles();
+            return;
+        }
+
+        const stackWidth = stack.getBoundingClientRect().width;
+        const expandedHeight = 277;
+        const summaryHeight = Math.min(Math.max(stackWidth * .17, 62), 78);
+
+        cards.forEach((card, index) => {
+            const stackOrder = (index - activeIndex + cards.length) % cards.length;
+            const isExpanded = stackOrder === 0;
+            const top = isExpanded
+                ? 0
+                : expandedHeight + ((stackOrder - 1) * summaryHeight);
+
+            card.style.setProperty('--mobile-service-top', `${top}px`);
+            card.style.setProperty(
+                '--mobile-service-height',
+                `${isExpanded ? expandedHeight : summaryHeight}px`
+            );
+            card.style.zIndex = String(cards.length - stackOrder);
+            card.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+        });
+    }
+
+    function selectMobileService(index) {
+        if (!mediaQuery.matches || index === activeIndex) return;
+        activeIndex = index;
+        updateMobileStack();
+    }
+
+    cards.forEach((card, index) => {
+        card.addEventListener('click', (event) => {
+            if (event.target.closest('.mobile-services-stack__link')) return;
+            selectMobileService(index);
+        });
+
+        card.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            selectMobileService(index);
+        });
+    });
+
+    mediaQuery.addEventListener('change', updateMobileStack);
+    window.addEventListener('resize', updateMobileStack, { passive: true });
+    updateMobileStack();
+})();

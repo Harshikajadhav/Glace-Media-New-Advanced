@@ -13,10 +13,16 @@ $conn->query(
         id INT UNSIGNED NOT NULL AUTO_INCREMENT,
         main_img VARCHAR(255) NOT NULL,
         thumbnail_img VARCHAR(255) NOT NULL,
+        mobile_image VARCHAR(255) NULL,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
 );
+
+$mobileImageColumn = $conn->query("SHOW COLUMNS FROM homepage_work LIKE 'mobile_image'");
+if ($mobileImageColumn instanceof mysqli_result && $mobileImageColumn->num_rows === 0) {
+    $conn->query("ALTER TABLE homepage_work ADD COLUMN mobile_image VARCHAR(255) NULL AFTER main_img");
+}
 
 if (!is_dir($uploadDirectory)) {
     mkdir($uploadDirectory, 0755, true);
@@ -60,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $workId = (int) ($_POST['work_id'] ?? 0);
 
     if ($action === 'delete' && $workId > 0) {
-        $query = $conn->prepare('SELECT main_img, thumbnail_img FROM homepage_work WHERE id = ?');
+        $query = $conn->prepare('SELECT main_img, thumbnail_img, mobile_image FROM homepage_work WHERE id = ?');
         $query->bind_param('i', $workId);
         $query->execute();
         $oldWork = $query->get_result()->fetch_assoc();
@@ -73,6 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $deleteQuery->close();
             removeWorkImage($oldWork['main_img'], $uploadDirectory);
             removeWorkImage($oldWork['thumbnail_img'], $uploadDirectory);
+            removeWorkImage($oldWork['mobile_image'] ?? '', $uploadDirectory);
             $message = 'Work item deleted successfully.';
         }
     }
@@ -80,14 +87,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'save') {
         $existingMainImage = trim($_POST['existing_main_img'] ?? '');
         $existingLogo = trim($_POST['existing_thumbnail_img'] ?? '');
+        $existingMobileImage = trim($_POST['existing_mobile_image'] ?? '');
         $mainImage = $_FILES['main_image'] ?? null;
         $logo = $_FILES['logo'] ?? null;
+        $mobileImage = $_FILES['mobile_image'] ?? null;
 
         if ($workId === 0 && (!$mainImage || $mainImage['error'] === UPLOAD_ERR_NO_FILE || !$logo || $logo['error'] === UPLOAD_ERR_NO_FILE)) {
             $error = 'Upload both a logo and a main image.';
         } else {
             $newMainImage = $existingMainImage;
             $newLogo = $existingLogo;
+            $newMobileImage = $existingMobileImage;
 
             if ($mainImage && $mainImage['error'] !== UPLOAD_ERR_NO_FILE) {
                 $newMainImage = saveWorkImage($mainImage, $uploadDirectory);
@@ -95,12 +105,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($logo && $logo['error'] !== UPLOAD_ERR_NO_FILE) {
                 $newLogo = saveWorkImage($logo, $uploadDirectory);
             }
+            if ($mobileImage && $mobileImage['error'] !== UPLOAD_ERR_NO_FILE) {
+                $newMobileImage = saveWorkImage($mobileImage, $uploadDirectory);
+            }
 
-            if ($newMainImage === false || $newLogo === false || $newMainImage === '' || $newLogo === '') {
+            if ($newMainImage === false || $newLogo === false || $newMobileImage === false || $newMainImage === '' || $newLogo === '') {
                 $error = 'Only valid JPG, PNG, WebP, or GIF images are allowed.';
             } elseif ($workId > 0) {
-                $query = $conn->prepare('UPDATE homepage_work SET main_img = ?, thumbnail_img = ? WHERE id = ?');
-                $query->bind_param('ssi', $newMainImage, $newLogo, $workId);
+                $query = $conn->prepare('UPDATE homepage_work SET main_img = ?, thumbnail_img = ?, mobile_image = NULLIF(?, \'\') WHERE id = ?');
+                $query->bind_param('sssi', $newMainImage, $newLogo, $newMobileImage, $workId);
                 $query->execute();
                 $query->close();
 
@@ -110,10 +123,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($newLogo !== $existingLogo && $existingLogo !== '') {
                     removeWorkImage($existingLogo, $uploadDirectory);
                 }
+                if ($newMobileImage !== $existingMobileImage && $existingMobileImage !== '') {
+                    removeWorkImage($existingMobileImage, $uploadDirectory);
+                }
                 $message = 'Work item updated successfully.';
             } else {
-                $query = $conn->prepare('INSERT INTO homepage_work (main_img, thumbnail_img) VALUES (?, ?)');
-                $query->bind_param('ss', $newMainImage, $newLogo);
+                $query = $conn->prepare('INSERT INTO homepage_work (main_img, thumbnail_img, mobile_image) VALUES (?, ?, NULLIF(?, \'\'))');
+                $query->bind_param('sss', $newMainImage, $newLogo, $newMobileImage);
                 $query->execute();
                 $query->close();
                 $message = 'Work item added successfully.';
@@ -124,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 if (isset($_GET['edit'])) {
     $workId = (int) $_GET['edit'];
-    $query = $conn->prepare('SELECT id, main_img, thumbnail_img FROM homepage_work WHERE id = ?');
+    $query = $conn->prepare('SELECT id, main_img, thumbnail_img, mobile_image FROM homepage_work WHERE id = ?');
     $query->bind_param('i', $workId);
     $query->execute();
     $editingWork = $query->get_result()->fetch_assoc();
@@ -132,7 +148,7 @@ if (isset($_GET['edit'])) {
 }
 
 $workItems = [];
-$result = $conn->query('SELECT id, main_img, thumbnail_img FROM homepage_work ORDER BY id DESC');
+$result = $conn->query('SELECT id, main_img, thumbnail_img, mobile_image FROM homepage_work ORDER BY id DESC');
 while ($row = $result->fetch_assoc()) {
     $workItems[] = $row;
 }
@@ -146,7 +162,7 @@ include __DIR__ . '/sidebar.php';
 <style>
     .work-page { max-width: 1500px; }
     .work-upload-panel { margin-bottom: 16px; }
-    .work-form { display: grid; grid-template-columns: minmax(180px, .7fr) minmax(220px, 1fr) minmax(220px, 1fr) auto; align-items: end; gap: 16px; padding: 20px; }
+    .work-form { display: grid; grid-template-columns: minmax(180px, .7fr) minmax(220px, 1fr) minmax(220px, 1fr) minmax(220px, 1fr) auto; align-items: end; gap: 16px; padding: 20px; }
     .work-form label { display: block; margin-bottom: 7px; color: var(--muted); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
     .work-form input[type="text"], .work-form input[type="file"] { width: 100%; padding: 11px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); color: var(--text); font-size: 12px; }
     .work-form input[type="file"] { padding: 9px; }
@@ -172,14 +188,16 @@ include __DIR__ . '/sidebar.php';
     <?php if ($error): ?><div class="work-notice work-error"><?= workValue($error) ?></div><?php endif; ?>
 
     <section class="panel work-upload-panel">
-        <div class="panel-header"><div><h2><?= $editingWork ? 'Edit work item' : 'Add work item' ?></h2><p><?= $editingWork ? 'Replace either image for this homepage work item.' : 'Upload a logo and main image for a homepage work item.' ?></p></div></div>
+        <div class="panel-header"><div><h2><?= $editingWork ? 'Edit work item' : 'Add work item' ?></h2><p><?= $editingWork ? 'Replace any image for this homepage work item.' : 'Upload a logo, desktop image, and optional mobile image for a homepage work item.' ?></p></div></div>
         <form class="work-form" method="post" enctype="multipart/form-data">
             <input type="hidden" name="action" value="save">
             <input type="hidden" name="work_id" value="<?= (int) ($editingWork['id'] ?? 0) ?>">
             <input type="hidden" name="existing_main_img" value="<?= workValue($editingWork['main_img'] ?? '') ?>">
             <input type="hidden" name="existing_thumbnail_img" value="<?= workValue($editingWork['thumbnail_img'] ?? '') ?>">
+            <input type="hidden" name="existing_mobile_image" value="<?= workValue($editingWork['mobile_image'] ?? '') ?>">
             <div><label for="workLogo">Logo</label><input type="file" id="workLogo" name="logo" accept="image/jpeg,image/png,image/webp,image/gif" <?= $editingWork ? '' : 'required' ?>></div>
-            <div><label for="mainImage">Main image</label><input type="file" id="mainImage" name="main_image" accept="image/jpeg,image/png,image/webp,image/gif" <?= $editingWork ? '' : 'required' ?>></div>
+            <div><label for="mainImage">Desktop image</label><input type="file" id="mainImage" name="main_image" accept="image/jpeg,image/png,image/webp,image/gif" <?= $editingWork ? '' : 'required' ?>></div>
+            <div><label for="mobileImage">Mobile Responsive Image</label><input type="file" id="mobileImage" name="mobile_image" accept="image/jpeg,image/png,image/webp,image/gif"><?php if (!empty($editingWork['mobile_image'])): ?><a href="<?= $uploadWebPath . workValue($editingWork['mobile_image']) ?>" target="_blank" rel="noopener"><img class="work-thumbnail" src="<?= $uploadWebPath . workValue($editingWork['mobile_image']) ?>" alt="Current mobile image"></a><?php endif; ?></div>
             <div class="work-actions"><button class="primary-button" type="submit"><i class="fa-solid fa-upload"></i><?= $editingWork ? 'Save changes' : 'Add work' ?></button><?php if ($editingWork): ?><a class="secondary-button" href="work.php">Cancel</a><?php endif; ?></div>
         </form>
     </section>
@@ -188,14 +206,15 @@ include __DIR__ . '/sidebar.php';
         <div class="panel-header"><div><h2>Homepage work items</h2><p><?= count($workItems) ?> item<?= count($workItems) === 1 ? '' : 's' ?> currently available.</p></div></div>
         <div class="table-container">
             <table class="work-table">
-                <thead><tr><th>Sr. No.</th><th>Logo</th><th>Main Image</th><th>Actions</th></tr></thead>
+                <thead><tr><th>Sr. No.</th><th>Logo</th><th>Desktop Image</th><th>Mobile Image</th><th>Actions</th></tr></thead>
                 <tbody>
-                <?php if (!$workItems): ?><tr><td colspan="4" class="empty-row">No work items found.</td></tr><?php endif; ?>
+                <?php if (!$workItems): ?><tr><td colspan="5" class="empty-row">No work items found.</td></tr><?php endif; ?>
                 <?php foreach ($workItems as $index => $work): ?>
                     <tr>
                         <td><?= $index + 1 ?></td>
                         <td><a href="<?= $uploadWebPath . workValue($work['thumbnail_img']) ?>" target="_blank" rel="noopener"><img class="work-thumbnail work-logo" src="<?= $uploadWebPath . workValue($work['thumbnail_img']) ?>" alt="Thumbnail image"></a></td>
-                        <td><a href="<?= $uploadWebPath . workValue($work['main_img']) ?>" target="_blank" rel="noopener"><img class="work-thumbnail" src="<?= $uploadWebPath . workValue($work['main_img']) ?>" alt="Main image"></a></td>
+                        <td><a href="<?= $uploadWebPath . workValue($work['main_img']) ?>" target="_blank" rel="noopener"><img class="work-thumbnail" src="<?= $uploadWebPath . workValue($work['main_img']) ?>" alt="Desktop image"></a></td>
+                        <td><?php if (!empty($work['mobile_image'])): ?><a href="<?= $uploadWebPath . workValue($work['mobile_image']) ?>" target="_blank" rel="noopener"><img class="work-thumbnail" src="<?= $uploadWebPath . workValue($work['mobile_image']) ?>" alt="Mobile image"></a><?php else: ?>—<?php endif; ?></td>
                         <td><div class="table-actions"><a href="work.php?edit=<?= (int) $work['id'] ?>" title="Edit work"><i class="fa-regular fa-pen-to-square"></i></a><form method="post" onsubmit="return confirm('Delete this work item?');"><input type="hidden" name="action" value="delete"><input type="hidden" name="work_id" value="<?= (int) $work['id'] ?>"><button class="delete-button" type="submit" title="Delete work"><i class="fa-regular fa-trash-can"></i></button></form></div></td>
                     </tr>
                 <?php endforeach; ?>

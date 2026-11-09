@@ -102,6 +102,12 @@ $renderClientIcons = static function (array $icons, bool $decorative = false): v
         object-position: center;
     }
 
+    .landing-preloader picture {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
     .landing-preloader::after {
         content: "";
         position: absolute;
@@ -172,7 +178,10 @@ $renderClientIcons = static function (array $icons, bool $decorative = false): v
     }
 </style>
 <div class="landing-preloader" aria-label="Scroll to enter Glace Media">
-    <img src="image/frontpageimg.png" alt="Glace Media">
+    <picture>
+        <source media="screen and (max-width: 1024px)" srcset="image/mobile-frontpage.png">
+        <img src="image/frontpageimg.png" alt="Glace Media">
+    </picture>
     <!-- <div class="preloader-scroll-prompt">Welcome to Glace</div> -->
 </div>
 
@@ -1812,8 +1821,133 @@ top: 0;
 </section>
 
 <script>
+    const reelViewport = document.querySelector(".reel-viewport");
+    const reelTrack = document.querySelector(".reel-track");
+    const mobileReelMedia = window.matchMedia("(max-width: 700px)");
+    const mobileReelState = {
+        selected: null,
+        playing: false,
+        centered: false,
+        centering: false,
+        playPending: false,
+        playbackToken: 0
+    };
+
+    const stopReelVideo = (reel) => {
+        const video = reel && reel.querySelector("video");
+        if (!video) return;
+        video.pause();
+        video.currentTime = 0;
+        video.muted = true;
+    };
+
+    const getTrackPosition = () => {
+        const transform = window.getComputedStyle(reelTrack).transform;
+        if (transform === "none") return 0;
+        return new DOMMatrix(transform).m41;
+    };
+
+    const resumeMobileReelScroll = () => {
+        const cycleWidth = reelTrack.scrollWidth / 2;
+        if (!cycleWidth) return;
+
+        let currentPosition = getTrackPosition() % cycleWidth;
+        if (currentPosition > 0) currentPosition -= cycleWidth;
+
+        reelTrack.style.transition = "none";
+        reelTrack.style.animation = "none";
+        reelTrack.style.transform = `translate3d(${currentPosition}px, 0, 0)`;
+        void reelTrack.offsetWidth;
+        reelTrack.style.transform = "";
+        reelTrack.style.animation = "reelScroll 38s linear infinite";
+        reelTrack.style.animationDelay = `${(currentPosition / cycleWidth) * 38}s`;
+        reelTrack.style.animationPlayState = "running";
+    };
+
+    const centerMobileReel = (reel) => {
+        const currentPosition = getTrackPosition();
+        const viewportRect = reelViewport.getBoundingClientRect();
+        const reelRect = reel.getBoundingClientRect();
+        const offset = (viewportRect.left + (viewportRect.width / 2)) -
+            (reelRect.left + (reelRect.width / 2));
+        const targetPosition = currentPosition + offset;
+
+        reelTrack.style.animationPlayState = "paused";
+        reelTrack.style.animation = "none";
+        reelTrack.style.transform = `translate3d(${currentPosition}px, 0, 0)`;
+        reelTrack.style.transition = "transform .5s cubic-bezier(.2, .8, .2, 1)";
+        mobileReelState.centering = true;
+        requestAnimationFrame(() => {
+            reelTrack.style.transform = `translate3d(${targetPosition}px, 0, 0)`;
+        });
+    };
+
+    const playMobileReel = (reel) => {
+        const video = reel.querySelector("video");
+        if (!video) return;
+
+        const playbackToken = ++mobileReelState.playbackToken;
+        mobileReelState.playPending = true;
+        video.currentTime = 0;
+        video.muted = false;
+        video.play().then(() => {
+            if (mobileReelState.selected !== reel || mobileReelState.playbackToken !== playbackToken) return;
+            mobileReelState.playPending = false;
+            mobileReelState.playing = true;
+        }).catch(() => {
+            video.muted = true;
+            video.play().then(() => {
+                if (mobileReelState.selected !== reel || mobileReelState.playbackToken !== playbackToken) return;
+                mobileReelState.playPending = false;
+                mobileReelState.playing = true;
+            }).catch(() => {
+                if (mobileReelState.playbackToken !== playbackToken) return;
+                mobileReelState.playPending = false;
+                video.pause();
+                video.currentTime = 0;
+            });
+        });
+    };
+
+    const handleMobileReelTap = (reel, event) => {
+        event.preventDefault();
+
+        if (mobileReelState.selected !== reel) {
+            if (mobileReelState.selected) stopReelVideo(mobileReelState.selected);
+            mobileReelState.selected = reel;
+            mobileReelState.playing = false;
+            mobileReelState.playPending = false;
+            mobileReelState.playbackToken++;
+            mobileReelState.centered = false;
+            reelTrack.style.animationPlayState = "paused";
+            centerMobileReel(reel);
+            return;
+        }
+
+        if (mobileReelState.centering || !mobileReelState.centered || mobileReelState.playPending) return;
+
+        if (mobileReelState.playing) {
+            stopReelVideo(reel);
+            mobileReelState.selected = null;
+            mobileReelState.playing = false;
+            mobileReelState.playbackToken++;
+            mobileReelState.centered = false;
+            resumeMobileReelScroll();
+            return;
+        }
+
+        playMobileReel(reel);
+    };
+
+    reelTrack.addEventListener("transitionend", (event) => {
+        if (event.propertyName !== "transform" || !mobileReelState.centering) return;
+        mobileReelState.centering = false;
+        mobileReelState.centered = true;
+    });
+
     document.querySelectorAll(".reel").forEach((reel) => {
         reel.addEventListener("mouseenter", () => {
+            if (mobileReelMedia.matches) return;
             const video = reel.querySelector("video");
             if (!video) return;
             video.currentTime = 0;
@@ -1821,18 +1955,24 @@ top: 0;
         });
 
         reel.addEventListener("mouseleave", () => {
+            if (mobileReelMedia.matches) return;
             const video = reel.querySelector("video");
             if (!video) return;
             video.pause();
             video.currentTime = 0;
         });
 
-        reel.addEventListener("touchstart", () => {
+        reel.addEventListener("touchstart", (event) => {
+            if (mobileReelMedia.matches) {
+                handleMobileReelTap(reel, event);
+                return;
+            }
+
             const video = reel.querySelector("video");
             if (!video) return;
             video.currentTime = 0;
             video.play().catch(() => {});
-        }, { passive: true });
+        }, { passive: false });
     });
 </script>
 
@@ -1863,7 +2003,12 @@ if (!$workResult) {
                 <div class="list">
                     <?php while ($row = $workResult->fetch_assoc()) { ?>
                         <div class="item">
-                            <img src="admin/uploads/<?php echo htmlspecialchars($row['main_img']); ?>" alt="Main Image">
+                            <picture>
+                                <?php if (!empty($row['mobile_image'])): ?>
+                                    <source media="(max-width: 700px)" srcset="admin/uploads/<?php echo htmlspecialchars($row['mobile_image'], ENT_QUOTES, 'UTF-8'); ?>">
+                                <?php endif; ?>
+                                <img src="admin/uploads/<?php echo htmlspecialchars($row['main_img'], ENT_QUOTES, 'UTF-8'); ?>" alt="Main Image">
+                            </picture>
                         </div>
                     <?php } ?>
                 </div>
@@ -1938,6 +2083,41 @@ if (!$workResult) {
             </div>
         </div>
     </div>
+
+    <section class="mobile-services-stack" aria-label="Services">
+        <h2 class="section-title mobile-services-stack__heading">Services</h2>
+        <div class="mobile-services-stack__cards">
+            <article class="mobile-services-stack__card" data-mobile-service-index="0" aria-expanded="true" tabindex="0">
+                <h3 class="mobile-services-stack__title">Influencer Marketing</h3>
+                <div class="mobile-services-stack__details">
+                    <p>Connecting brands with voices that inspire and influence.</p>
+                    <a class="mobile-services-stack__link" href="ourservices.php">View More <span aria-hidden="true">→</span></a>
+                </div>
+            </article>
+            <article class="mobile-services-stack__card" data-mobile-service-index="1" aria-expanded="false" tabindex="0">
+                <h3 class="mobile-services-stack__title">Campaign Management</h3>
+                <div class="mobile-services-stack__details">
+                    <p>Formulating campaigns that stand apart.</p>
+                    <a class="mobile-services-stack__link" href="ourservices.php">View More <span aria-hidden="true">→</span></a>
+                </div>
+            </article>
+            <article class="mobile-services-stack__card" data-mobile-service-index="2" aria-expanded="false" tabindex="0">
+                <h3 class="mobile-services-stack__title">Videography</h3>
+                <div class="mobile-services-stack__details">
+                    <p>From script to screen, we do it all!</p>
+                    <a class="mobile-services-stack__link" href="ourservices.php">View More <span aria-hidden="true">→</span></a>
+                </div>
+            </article>
+            <article class="mobile-services-stack__card" data-mobile-service-index="3" aria-expanded="false" tabindex="0">
+                <h3 class="mobile-services-stack__title">Social Media Marketing</h3>
+                <div class="mobile-services-stack__details">
+                    <p>Our creative strategies turn feeds into brand powerhouses.</p>
+                    <a class="mobile-services-stack__link" href="ourservices.php">View More <span aria-hidden="true">→</span></a>
+                </div>
+            </article>
+        </div>
+    </section>
+
 <!-- 
     <div class="mobile-services-main">
         <div class="mobile-services"><p>Influencer Marketing</p><span>Lorem ipsum dolor sit amet consectetur adipisicing elit. Vel mollitia sint incidunt exercitationem assumenda, vero suscipit itaque earum molestiae facilis est nulla, explicabo fugiat.</span></div>
