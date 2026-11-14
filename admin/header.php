@@ -15,12 +15,13 @@ $adminSiteHref = $adminSiteHref ?? '../index.php';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="<?= htmlspecialchars($adminAssetPrefix, ENT_QUOTES, 'UTF-8') ?>style.css">
     <script src="../cursor.js" defer></script>
+    <script src="<?= htmlspecialchars($adminAssetPrefix, ENT_QUOTES, 'UTF-8') ?>app.js" defer></script>
 </head>
 <body>
 <div class="app">
     <main class="main">
         <header class="topbar">
-            <button class="mobile-menu" id="mobileMenu" type="button">
+            <button class="mobile-menu" id="mobileMenu" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Open navigation menu">
                 <i class="fa-solid fa-bars"></i>
             </button>
             <div class="breadcrumb">

@@ -7,7 +7,7 @@ $adminBasePath = $adminBasePath ?? '';
             <div class="brand-mark">M</div>
             <div class="brand-text"><span>MEDIA</span><small>ADMIN</small></div>
         </div>
-        <button class="sidebar-close" id="sidebarClose" type="button"><i class="fa-solid fa-xmark"></i></button>
+        <button class="sidebar-close" id="sidebarClose" type="button" aria-label="Close navigation menu"><i class="fa-solid fa-xmark"></i></button>
     </div>
 
     <nav class="navigation">

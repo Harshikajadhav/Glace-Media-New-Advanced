@@ -2203,8 +2203,5 @@ Our approach combines strategy, creativity and culture to create work that peopl
 </div>
 
 
-<script src="app.js"></script>
-
 </body>
 </html>
-
