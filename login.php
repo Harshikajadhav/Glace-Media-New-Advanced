@@ -9,9 +9,20 @@ if (!empty($_SESSION['admin_user_id'])) {
 require_once __DIR__ . '/db_connection.php';
 
 $errorMessage = '';
+// $redirect = $_GET['redirect'] ?? $_POST['redirect'] ?? 'admin/';
+// if (strpos($redirect, '/glace-new/admin/') !== 0) {
+//   $redirect = 'admin/';
+// }
+
 $redirect = $_GET['redirect'] ?? $_POST['redirect'] ?? 'admin/';
-if (strpos($redirect, '/glace-new/admin/') !== 0) {
-  $redirect = 'admin/';
+
+$redirect = trim($redirect);
+
+if (
+    strpos($redirect, 'admin/') !== 0 ||
+    strpos($redirect, '..') !== false
+) {
+    $redirect = 'admin/';
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
